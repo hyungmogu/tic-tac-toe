@@ -1,0 +1,5 @@
+# depslib dependency file v1.0
+1509077709 source:c:\users\hmgu7\desktop\programming\tic_tac_toe\cpp\main.cpp
+	<iostream>
+	<stdlib.h>
+

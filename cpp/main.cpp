@@ -1,6 +1,28 @@
 #include <iostream>
+#include <stdlib.h>
 
 using namespace std;
+
+void clear_screen();
+void draw_board(int board[]);
+void print_line();
+void print_tile_with_values_in_a_row(int board[], int i);
+char return_tile_value(int board[] , int i);
+void reset_vars(int &num_turns, int &winner, int * board);
+void play_game(int &num_turns, int &player_turn, int &tile_pos_col, int &tile_pos_row, int &winner, int board[]);
+void show_player_turn(int player_turn);
+void prompt_pos_input(char * row_or_col);
+void harvest_pos_input(int &var_to_store_pos_val);
+void update_board(int board[], int player_turn, int tile_pos_row, int tile_pos_col);
+char return_tile_type(int player_turn);
+void update_player_turn(int &player_turn);
+void update_num_of_turns(int &num_of_turns);
+void check_diagonals(int board[] , int &winner);
+void check_horizontals(int board[] , int &winner);
+void check_verticals(int board[] , int &winner);
+bool is_game_over(int number_of_turns, int winner);
+void display_result(int winner);
+bool want_to_play_again(bool & play_again);
 
 int main()
 {
@@ -574,5 +596,312 @@ g
 
     */
 
+    int num_turns = 0;
+    int player_turn = 1;
+    int tile_pos_col, tile_pos_row;
+    int winner = 0;
+    int *board = new int[9]();
+    bool play_again = false;
+
+    do {
+        if(play_again) {
+            reset_vars(num_turns, winner, board);
+        }
+        clear_screen();
+        draw_board(board);
+
+        play_game(num_turns, player_turn, tile_pos_col, tile_pos_row, winner, board);
+
+        display_result(winner);
+
+    } while (want_to_play_again(play_again));
+
     return 0;
+}
+
+
+
+void reset_vars(int & num_turns, int & winner, int * board) {
+    num_turns = 0;
+    winner = 0;
+
+    if(*board) {
+        delete []board;
+    }
+
+    board = new int[9]();
+}
+
+void clear_screen() {
+    #ifdef __APPLE__ || __unix__
+    system('clear');
+    #else
+    system("cls");
+    #endif
+}
+
+void draw_board(int board[]) {
+    // print tile with values row after row
+    for (int i = 0; i < 9; i += 3) {
+        print_line();
+        print_tile_with_values_in_a_row(board,i);
+    }
+
+    // finish the printing of the board by printing the bottom line
+
+    print_line();
+}
+
+void print_line() {
+    cout << "+---+---+---+" << endl;
+}
+
+void print_tile_with_values_in_a_row(int board[], int i) {
+    cout << "| " << return_tile_value(board, i) << " | " << return_tile_value(board, i+1) << " | " << return_tile_value(board, i+2) << " |" << endl;
+}
+
+char return_tile_value(int board[] , int i) {
+    switch(board[i]) {
+        case 1:
+            return 'x';
+        case 2:
+            return 'o';
+        default:
+            return ' ';
+    }
+}
+
+void play_game(int &num_turns, int &player_turn, int &tile_pos_col, int &tile_pos_row, int &winner, int board[]) {
+    do {
+        show_player_turn(player_turn);
+        prompt_pos_input("row");
+        harvest_pos_input(tile_pos_row);
+        prompt_pos_input("col");
+        harvest_pos_input(tile_pos_col);
+
+        // update game
+        update_board(board, player_turn, tile_pos_row, tile_pos_col);
+        update_player_turn(player_turn);
+        update_num_of_turns(num_turns);
+        clear_screen();
+        draw_board(board);
+
+        // check for lines
+        check_diagonals(board, winner);
+        check_horizontals(board, winner);
+        check_verticals(board, winner);
+
+    } while(!is_game_over(num_turns, winner));
+}
+
+void show_player_turn(int player_turn) {
+    switch (player_turn){
+        case 1:
+            cout << "Player 1's turn!" << endl;
+            break;
+        case 2:
+            cout << "Player 2's turn!" << endl;
+            break;
+    }
+}
+
+void prompt_pos_input(char * row_or_col) {
+    cout << "Enter " << row_or_col << " position (0-2): ";
+}
+
+void harvest_pos_input(int &var_to_store_pos_val) {
+    cin >> var_to_store_pos_val;
+}
+
+void update_board(int board[], int player_turn, int tile_pos_row, int tile_pos_col) {
+    switch(tile_pos_row) {
+        case 0:
+            board[tile_pos_col] = player_turn;
+            break;
+        case 1:
+            board[tile_pos_col + 3] = player_turn;
+            break;
+        case 2:
+            board[tile_pos_col + 6] = player_turn;
+            break;
+    }
+}
+
+void update_player_turn(int &player_turn) {
+    switch(player_turn) {
+        case 1:
+            player_turn = 2;
+            break;
+        case 2:
+            player_turn = 1;
+            break;
+    }
+}
+
+void update_num_of_turns(int &num_of_turns) {
+    num_of_turns++;
+}
+
+void check_diagonals(int board[] , int &winner) {
+    int indexes_to_check[2][3] = {
+        {0, 4, 8},
+        {2, 4, 6}
+    };
+
+    int i = 0;
+    if(winner <= 0) {
+        while(i < 2) {
+
+            int player_1_cnt = 0;
+            int player_2_cnt = 0;
+
+            // count tiles per diagonal
+            for(int j : indexes_to_check[i]) {
+                switch(board[j]) {
+                    case 1:
+                        player_1_cnt++;
+                        break;
+                    case 2:
+                        player_2_cnt++;
+                        break;
+                }
+            }
+
+            // check if either of the two players won
+            if (player_1_cnt == 3) {
+                winner = 1;
+                break;
+            } else if (player_2_cnt == 3) {
+                winner = 2;
+                break;
+            }
+
+            i++;
+        }
+    }
+}
+
+void check_horizontals(int board[] , int &winner) {
+    int indexes_to_check[3][3] = {
+        {0, 1, 2},
+        {3, 4, 5},
+        {6, 7, 8}
+    };
+
+    int i = 0;
+    if(winner <= 0) {
+        while(i < 3) {
+
+            int player_1_cnt = 0;
+            int player_2_cnt = 0;
+
+            // count tiles per diagonal
+            for(int j : indexes_to_check[i]) {
+                switch(board[j]) {
+                    case 1:
+                        player_1_cnt++;
+                        break;
+                    case 2:
+                        player_2_cnt++;
+                        break;
+                }
+            }
+
+            // check if either of the two players won
+            if (player_1_cnt == 3) {
+                winner = 1;
+                break;
+            } else if (player_2_cnt == 3) {
+                winner = 2;
+                break;
+            }
+
+            i++;
+        }
+    }
+}
+
+void check_verticals(int board[] , int &winner) {
+    int indexes_to_check[3][3] = {
+        {0, 3, 6},
+        {1, 4, 7},
+        {2, 5, 8}
+    };
+
+    int i = 0;
+    if(winner <= 0) {
+        while(i < 3) {
+
+            int player_1_cnt = 0;
+            int player_2_cnt = 0;
+
+            // count tiles per diagonal
+            for(int j : indexes_to_check[i]) {
+                switch(board[j]) {
+                    case 1:
+                        player_1_cnt++;
+                        break;
+                    case 2:
+                        player_2_cnt++;
+                        break;
+                }
+            }
+
+            // check if either of the two players won
+            if (player_1_cnt == 3) {
+                winner = 1;
+                break;
+            } else if (player_2_cnt == 3) {
+                winner = 2;
+                break;
+            }
+
+            i++;
+        }
+    }
+}
+
+bool is_game_over(int number_of_turns, int winner) {
+
+    // return true if number of turns is less than or equal to 9 and when there is no winner
+    if(number_of_turns <= 9 && winner == 0) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+void display_result(int winner) {
+    switch(winner) {
+
+        case 1:
+            cout << "player 1 wins!" << endl;
+            break;
+        case 2:
+            cout << "player 2 wins!" << endl;
+            break;
+        default:
+            cout << "It's a cat game!" << endl;
+    }
+}
+
+bool want_to_play_again(bool &play_again) {
+
+    char response;
+    bool correct_response = false;
+
+    do {
+        cout << "Want to play again (y/n): ";
+        cin >> response;
+
+        switch(response){
+            case 'y':
+                play_again = true;
+                return true;
+            case 'n':
+                return false;
+            default:
+                cout << "Wrong response. Please try again" << endl;
+        }
+    } while(!correct_response);
 }
